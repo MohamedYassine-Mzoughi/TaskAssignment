@@ -375,7 +375,7 @@
 </head>
 <body>
     <div class="app-container">
-        <h1>ASFOURA Document Editor</h1>
+        <h1>ASFOURA Document Editor 1535</h1>
         <p class="subtitle"></p>
         
         <div class="workspace">
@@ -443,8 +443,11 @@
                         <br>
                         <br>
                         <p style="line-height: 1.6; margin-bottom: 15px;font-weight: bold;line-height: 0.4;">To: </p>
-                        <p id="selectionOutput" style="line-height: 1.6; margin-bottom: 15px;font-weight: bold;line-height: 0.4;">Mohamed Skander Souissi</p>
-                        <p style="line-height: 1.6; margin-bottom: 15px;line-height: 0.4;">Modeling Team — Creative Department</p>
+                        <div id="selectionOutput">
+
+                        </div>
+                        
+                        
 
                         <br>
                         
@@ -561,8 +564,10 @@
   memberSelect.addEventListener("change", () => {
     if (memberSelect.value && teamSelect.value) {
       output.innerHTML = `
-        ${memberSelect.value}<br>
-        ${teamSelect.value}
+        <p style="line-height: 1.6; margin-bottom: 15px;font-weight: bold;line-height: 0.4;">${memberSelect.value}</p>
+        <p style="line-height: 1.6; margin-bottom: 15px;line-height: 0.4;">${teamSelect.value}</p>
+        
+        
       `;
     }
   });
