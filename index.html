@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asfoura Document Editor</title>
+    <!-- Include html2pdf library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Include FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .app-container {
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        
+        .workspace {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 1024px) {
+            .workspace {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Editor Area */
+        .editor-container {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border: 2px dashed #dee2e6;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .editor-label {
+            display: block;
+            text-align: center;
+            margin-bottom: 15px;
+            color: #495057;
+            font-weight: 500;
+            width: 100%;
+        }
+        
+        /* Editable PDF Content */
+        #pdfContent {
+            width: 20cm;
+            height: 20cm;
+            background: white;
+            margin: 0;
+            padding: 1.5cm;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            overflow: auto;
+            position: relative;
+            box-sizing: border-box;
+            outline: none;
+            cursor: text;
+        }
+        
+        #pdfContent:focus {
+            outline: 2px solid #4a6fa5;
+        }
+        
+        /* Editable content styles */
+        .editable-content {
+            min-height: 100%;
+        }
+        
+        /* Controls Panel */
+        .controls-panel {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            border: 1px solid #e9ecef;
+        }
+        
+        /* Toolbar */
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .toolbar-btn {
+            padding: 8px 12px;
+            background: white;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .toolbar-btn:hover {
+            background: #e9ecef;
+            border-color: #4a6fa5;
+        }
+        
+        .toolbar-btn.active {
+            background: #4a6fa5;
+            color: white;
+            border-color: #4a6fa5;
+        }
+        
+        /* Control groups */
+        .control-group {
+            margin-bottom: 25px;
+        }
+        
+        .control-group h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 18px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        
+        .btn-primary {
+            /*background: linear-gradient(to right, #4a6fa5, #3a5985);**/
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(to right, #3a5985, #2c4870);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(58, 89, 133, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #495057;
+            font-weight: 500;
+        }
+        
+        .input-group input,
+        .input-group textarea,
+        .input-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        
+        .input-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        
+        /* Image upload */
+        .image-upload-container {
+            border: 2px dashed #4a6fa5;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .image-upload-container:hover {
+            background: rgba(74, 111, 165, 0.05);
+        }
+        
+        .image-upload-container i {
+            font-size: 40px;
+            color: #4a6fa5;
+            margin-bottom: 10px;
+        }
+        
+        /* Status message */
+        .status-message {
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-weight: 500;
+            display: none;
+        }
+        
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        /* Dimensions indicator */
+        .dimensions {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(74, 111, 165, 0.1);
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #4a6fa5;
+            pointer-events: none;
+        }
+        
+        /* Visual guide */
+        .visual-guide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border: 1px dashed rgba(74, 111, 165, 0.3);
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        /* Preview guide */
+        .preview-guide {
+            font-size: 12px;
+            color: #6c757d;
+            text-align: center;
+            margin-top: 10px;
+            font-style: italic;
+        }
+        
+        /* Table styles */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 15px 0;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        
+        /* Image styles in editor */
+        .editor-image {
+            max-width: 100%;
+            height: auto;
+            margin: 10px 0;
+            cursor: move;
+            border: 2px solid transparent;
+        }
+        
+        .editor-image:hover {
+            border-color: #4a6fa5;
+        }
+        
+        /* Resizable handles */
+        .resize-handle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #4a6fa5;
+            border-radius: 50%;
+            bottom: -5px;
+            right: -5px;
+            cursor: nwse-resize;
+            display: none;
+        }
+        
+        .editor-image.resizable:hover .resize-handle {
+            display: block;
+        }
+        
+        /* Color picker */
+        .color-picker {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        
+        .color-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        
+        .color-option:hover {
+            border-color: #333;
+        }
+        
+        .color-option.active {
+            border-color: #333;
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <h1>ASFOURA Document Editor 1551</h1>
+        <p class="subtitle"></p>
+        
+        <div class="workspace">
+            <!-- Editor Area -->
+            <div class="editor-container">
+                <span class="editor-label">Edit Directly Here (20×20 cm)</span>
+                
+                <!-- Toolbar for the editor -->
+                <div class="toolbar">
+                    <button class="toolbar-btn" onclick="formatText('bold')" title="Bold">
+                        <i class="fas fa-bold"></i>
+                    </button>
+                    <button class="toolbar-btn" onclick="formatText('italic')" title="Italic">
+                        <i class="fas fa-italic"></i>
+                    </button>
+                    <button class="toolbar-btn" onclick="formatText('underline')" title="Underline">
+                        <i class="fas fa-underline"></i>
+                    </button>
+                    <button class="toolbar-btn" onclick="formatText('strikeThrough')" title="Strikethrough">
+                        <i class="fas fa-strikethrough"></i>
+                    </button>
+                    <div class="separator"></div>
+                    <button class="toolbar-btn" onclick="changeAlignment('left')" title="Align Left">
+                        <i class="fas fa-align-left"></i>
+                    </button>
+                    <button class="toolbar-btn" onclick="changeAlignment('center')" title="Align Center">
+                        <i class="fas fa-align-center"></i>
+                    </button>
+                    <button class="toolbar-btn" onclick="changeAlignment('right')" title="Align Right">
+                        <i class="fas fa-align-right"></i>
+                    </button>
+                    <button class="toolbar-btn" onclick="changeAlignment('justify')" title="Justify">
+                        <i class="fas fa-align-justify"></i>
+                    </button>
+                    <div class="separator"></div>
+                    <button class="toolbar-btn" onclick="insertTable()" title="Insert Table">
+                        <i class="fas fa-table"></i> Table
+                    </button>
+                    <button class="toolbar-btn" onclick="insertList('ul')" title="Bullet List">
+                        <i class="fas fa-list-ul"></i>
+                    </button>
+                    <button class="toolbar-btn" onclick="insertList('ol')" title="Numbered List">
+                        <i class="fas fa-list-ol"></i>
+                    </button>
+                    <div class="separator"></div>
+                    <button class="toolbar-btn" onclick="clearFormatting()" title="Clear Formatting">
+                        <i class="fas fa-eraser"></i>
+                    </button>
+                </div>
+                
+                <!-- Editable PDF Content -->
+                <div id="pdfContent" contenteditable="true">
+                    <div class="editable-content">
+                        <div class="visual-guide"></div>
+                        
+                        <!-- Default content -->
+                        
+                        <img src="data:image/png;base64,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"
+                             style= "width: 25%;height: 25%;"   />
+                        
+                        <h2 style="text-align: left; color: #2c3e50; margin-bottom: 20px;font-size: 45px">Task Assignment Letter</h2>
+                        <p style="line-height: 1.6; margin-bottom: 5px;font-weight: bold;line-height: 1.5;display: inline;">Reference: &nbsp; <p style="display: inline;font-size: 14px;font-weight: bold;" id="refoutput"></p> </p>
+                        <p style="line-height: 1.6; margin-bottom: 0px;font-weight: bold;line-height: 1;">Issued by: </p>
+                        <p style="line-height: 1.6; margin-bottom: 10px;font-weight: bold;line-height: 0.3;display: inline;">Date: &nbsp; <p style="display: inline;font-size: 14px;font-weight: bold;" id="dateOutput"></p> </p>
+                        <br>
+                        <br>
+                        <p style="line-height: 1.6; margin-bottom: 15px;font-weight: bold;line-height: 0.4;">To: </p>
+                        <div id="selectionOutput">
+
+                        </div>
+                        
+                        
+
+                        <br>
+                        
+                        <table border="1">
+                            <tr>
+                              <td style="font-weight: bold;width: 30%;">Task Title</td>
+                              <td></td>
+                            </tr>
+                            <tr>
+                              <td style="font-weight: bold">Description</td>
+                              <td></td>
+                            </tr>
+                            <tr>
+                              <td style="font-weight: bold">Collabs (with teams)</td>
+                              <td></td>
+                            </tr>
+                          </table>
+                        
+                        
+                        
+                        <div class="dimensions">20×20 cm</div>
+                    </div>
+                </div>
+                
+                <div class="preview-guide">Dashed line shows PDF boundaries - won't appear in final PDF</div>
+            </div>
+            
+            <!-- Controls Panel -->
+            <div class="controls-panel">
+                <div class="control-group"> 
+                    <div class="input-group">
+                        <label>Team</label>
+                        <select id="teamSelect">
+                            <option value="">Select Team</option>
+                        </select>
+                        <br>
+                        <label>Member</label>
+                        <select id="memberSelect">
+                            <option value="">Select Member</option>
+                        </select>
+                    </div>
+                </div>                   
+                
+                <div class="control-group">
+                    <h3><i class="fas fa-table"></i> Table Options</h3>
+                    <div class="input-group">
+                        <label for="tableRows">Rows</label>
+                        <input type="number" id="tableRows" min="1" max="10" value="3">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="tableCols">Columns</label>
+                        <input type="number" id="tableCols" min="1" max="10" value="3">
+                    </div>
+                    
+                    <button class="btn btn-secondary" onclick="insertCustomTable()">
+                        <i class="fas fa-plus"></i> Insert Custom Table
+                    </button>
+                </div>
+                
+                <div class="control-group">
+                    <h3><i class="fas fa-download"></i> Generate PDF</h3>
+                    
+                    <div class="input-group">
+                        <label for="filenameInput">PDF Filename</label>
+                        <input type="text" id="filenameInput" value="Task Assignment Letter">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="qualitySelect">PDF Quality</label>
+                        <select id="qualitySelect">
+                            <option value="3">High (Best quality)</option>
+                            <option value="2" selected>Medium (Recommended)</option>
+                            <option value="1">Low (Smaller file)</option>
+                        </select>
+                    </div>
+
+                    <button style="background-color:#006a20" id="generateBtn" class="btn btn-primary">
+                         Generate Ref Code
+                    </button>
+                    
+                    <button class="btn btn-primary" onclick="generatePDF()">
+                        <i class="fas fa-file-pdf"></i> Generate Task Assignment Letter
+                    </button>
+                    
+                    <button class="btn btn-secondary" onclick="clearEditor()">
+                        <i class="fas fa-trash-alt"></i> Clear Editor
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="statusMessage" class="status-message"></div>
+    </div>
+
+    <script src="encrypt.js"></script>
+    <script>
+
+    const teamSelect = document.getElementById("teamSelect");
+    const memberSelect = document.getElementById("memberSelect");
+    const output = document.getElementById("selectionOutput");
+
+    teamSelect.addEventListener("change", () => {
+    memberSelect.innerHTML = '<option value="">Select Member</option>';
+    output.textContent = "—";
+
+    const members = teamData[teamSelect.value] || [];
+
+    members.forEach(member => {
+      const option = document.createElement("option");
+      option.value = member;
+      option.textContent = member;
+      memberSelect.appendChild(option);
+        });
+    });
+
+  memberSelect.addEventListener("change", () => {
+    if (memberSelect.value && teamSelect.value) {
+      output.innerHTML = `
+        <p style="line-height: 1.6; margin-bottom: 15px;font-weight: bold;line-height: 0.4;">${memberSelect.value}</p>
+        <p style="line-height: 1.6; margin-bottom: 15px;line-height: 0.4;">${teamSelect.value}</p>
+        
+        
+      `;
+      document.getElementById("filenameInput").value = `S3W7 - WeeklyTasks - ${teamSelect.value} - ${memberSelect.value}`;
+    }
+  });
+
+        document.getElementById("generateBtn").addEventListener("click", () => {
+        const ref = generateReference("supervisor", "task", "first");
+        document.getElementById("refoutput").textContent = ref;
+        document.getElementById("dateOutput").textContent = generateReadableDate();
+    });
+        // Initialize the editor
+        const editor = document.getElementById('pdfContent');
+        let currentColor = '#000000';
+        
+        // Make images draggable and resizable
+        function makeImageInteractive(img) {
+            img.classList.add('editor-image', 'resizable');
+            
+            // Create resize handle
+            const handle = document.createElement('div');
+            handle.className = 'resize-handle';
+            img.style.position = 'relative';
+            img.appendChild(handle);
+            
+            // Make draggable
+            img.draggable = true;
+            img.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', 'image');
+                img.classList.add('dragging');
+            });
+            
+            img.addEventListener('dragend', () => {
+                img.classList.remove('dragging');
+            });
+            
+            // Make resizable
+            let isResizing = false;
+            handle.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                isResizing = true;
+                
+                const startX = e.clientX;
+                const startY = e.clientY;
+                const startWidth = img.offsetWidth;
+                const startHeight = img.offsetHeight;
+                
+                function onMouseMove(e) {
+                    if (!isResizing) return;
+                    
+                    const dx = e.clientX - startX;
+                    const dy = e.clientY - startY;
+                    
+                    img.style.width = (startWidth + dx) + 'px';
+                    img.style.height = (startHeight + dy) + 'px';
+                }
+                
+                function onMouseUp() {
+                    isResizing = false;
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                }
+                
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            });
+        }
+        
+        // Text formatting functions
+        function formatText(command) {
+            document.execCommand(command, false, null);
+            editor.focus();
+        }
+        
+        function changeAlignment(align) {
+            document.execCommand('justify' + (align === 'left' ? 'Left' : align === 'center' ? 'Center' : align === 'right' ? 'Right' : 'Full'));
+            editor.focus();
+        }
+        
+        function setTextColor(color) {
+            currentColor = color;
+            document.execCommand('foreColor', false, color);
+            
+            // Update color picker UI
+            document.querySelectorAll('.color-option').forEach(option => {
+                option.classList.remove('active');
+                if (option.style.backgroundColor === color || 
+                    (color === '#000000' && option.style.backgroundColor === 'rgb(0, 0, 0)')) {
+                    option.classList.add('active');
+                }
+            });
+            
+            editor.focus();
+        }
+        
+        function clearFormatting() {
+            document.execCommand('removeFormat', false, null);
+            editor.focus();
+        }
+        
+        // Insert table
+        function insertTable() {
+            const rows = 3;
+            const cols = 3;
+            insertCustomTable(rows, cols);
+        }
+        
+        function insertCustomTable(customRows, customCols) {
+            const rows = customRows || parseInt(document.getElementById('tableRows').value) || 3;
+            const cols = customCols || parseInt(document.getElementById('tableCols').value) || 3;
+            
+            let tableHTML = '<table style="width: 100%; border-collapse: collapse; margin: 15px 0;">';
+            
+            // Create header row
+            tableHTML += '<thead><tr>';
+            for (let i = 0; i < cols; i++) {
+                tableHTML += `<th style="border: 1px solid #ddd; padding: 8px; background: #f2f2f2;">Header ${i+1}</th>`;
+            }
+            tableHTML += '</tr></thead>';
+            
+            // Create data rows
+            tableHTML += '<tbody>';
+            for (let r = 0; r < rows; r++) {
+                tableHTML += '<tr>';
+                for (let c = 0; c < cols; c++) {
+                    tableHTML += `<td style="border: 1px solid #ddd; padding: 8px;">Data ${r+1}-${c+1}</td>`;
+                }
+                tableHTML += '</tr>';
+            }
+            tableHTML += '</tbody></table>';
+            
+            document.execCommand('insertHTML', false, tableHTML);
+            editor.focus();
+        }
+        
+        // Insert list
+        function insertList(type) {
+            document.execCommand('insert' + (type === 'ul' ? 'Unordered' : 'Ordered') + 'List', false, null);
+            editor.focus();
+        }
+        
+        // Handle image upload
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!file.type.match('image.*')) {
+                showStatus('Please select an image file', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                insertImage(e.target.result);
+            };
+            reader.readAsDataURL(file);
+            
+            // Reset file input
+            event.target.value = '';
+        }
+        
+        function insertImage(src) {
+            const size = document.getElementById('imageSize').value;
+            const img = document.createElement('img');
+            img.src = src;
+            img.style.maxWidth = size + '%';
+            img.style.height = 'auto';
+            img.style.margin = '10px 0';
+            
+            // Insert at cursor position
+            document.execCommand('insertHTML', false, img.outerHTML);
+            
+            // Make the newly inserted image interactive
+            const images = editor.getElementsByTagName('img');
+            if (images.length > 0) {
+                makeImageInteractive(images[images.length - 1]);
+            }
+            
+            editor.focus();
+        }
+        
+        function insertSampleImage() {
+            // Sample image URL (a placeholder image)
+            const sampleImageUrl = 'https://images.unsplash.com/photo-1546527868-ccb7ee7dfa6a?w=400&h=300&fit=crop';
+            insertImage(sampleImageUrl);
+            showStatus('Sample image inserted', 'success');
+        }
+        
+        // Drag and drop for images
+        editor.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+        
+        editor.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                if (file.type.match('image.*')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        insertImage(e.target.result);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        });
+        
+        // Clear editor
+        function clearEditor() {
+            if (confirm('Are you sure you want to clear the editor? This cannot be undone.')) {
+                editor.innerHTML = `
+                    <div class="editable-content">
+                        <div class="visual-guide"></div>
+                        <p style="text-align: center; color: #7f8c8d; margin-top: 50px;">
+                            Start typing here... Use the toolbar and controls to add content.
+                        </p>
+                        <div class="dimensions">20×20 cm</div>
+                    </div>
+                `;
+                showStatus('Editor cleared', 'success');
+            }
+        }
+        
+        // Generate PDF
+        function generatePDF() {
+            const element = document.getElementById('pdfContent');
+            const filename = document.getElementById('filenameInput').value + '.pdf';
+            const scale = parseFloat(document.getElementById('qualitySelect').value);
+            
+            showStatus('Generating PDF...', 'success');
+            
+            // Hide visual guide before capturing
+            const visualGuide = element.querySelector('.visual-guide');
+            if (visualGuide) {
+                visualGuide.style.display = 'none';
+            }
+            
+            // Hide dimensions indicator
+            const dimensions = element.querySelector('.dimensions');
+            if (dimensions) {
+                dimensions.style.display = 'none';
+            }
+            
+            // Configure PDF options
+            const options = {
+                margin: 0,
+                filename: filename,
+                image: { 
+                    type: 'jpeg', 
+                    quality: 0.98 
+                },
+                html2canvas: { 
+                    scale: scale,
+                    useCORS: true,
+                    backgroundColor: '#ffffff',
+                    width: 756,
+                    height: 756,
+                    x: 0,
+                    y: 0,
+                    scrollX: 0,
+                    scrollY: 0,
+                    windowWidth: element.scrollWidth,
+                    windowHeight: element.scrollHeight,
+                    onclone: function(clonedDoc) {
+                        const clonedElement = clonedDoc.getElementById('pdfContent');
+                        clonedElement.style.margin = '0';
+                        clonedElement.style.padding = '1.5cm';
+                        clonedElement.style.boxShadow = 'none';
+                        clonedElement.style.outline = 'none';
+                        
+                        // Hide visual guide and dimensions in clone
+                        const clonedGuide = clonedElement.querySelector('.visual-guide');
+                        if (clonedGuide) {
+                            clonedGuide.style.display = 'none';
+                        }
+                        
+                        const clonedDimensions = clonedElement.querySelector('.dimensions');
+                        if (clonedDimensions) {
+                            clonedDimensions.style.display = 'none';
+                        }
+                    }
+                },
+                jsPDF: {
+                    unit: 'cm',
+                    format: [20, 20],
+                    orientation: 'portrait',
+                    compress: true,
+                    hotfixes: ["px_scaling"]
+                }
+            };
+            
+            // Generate and download PDF
+            html2pdf()
+                .set(options)
+                .from(element)
+                .save()
+                .then(() => {
+                    showStatus(`PDF downloaded as "${filename}"`, 'success');
+                    
+                    // Restore visual elements
+                    if (visualGuide) {
+                        visualGuide.style.display = 'block';
+                    }
+                    if (dimensions) {
+                        dimensions.style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    showStatus(`Error generating PDF: ${error.message}`, 'error');
+                    
+                    // Restore visual elements on error
+                    if (visualGuide) {
+                        visualGuide.style.display = 'block';
+                    }
+                    if (dimensions) {
+                        dimensions.style.display = 'block';
+                    }
+                });
+        }
+        
+        // Show status message
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.className = `status-message status-${type}`;
+            statusDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Make existing images interactive
+            const images = editor.getElementsByTagName('img');
+            for (let img of images) {
+                makeImageInteractive(img);
+            }
+            
+            // Set default text color
+            setTextColor('#000000');
+            
+            // Focus editor on click
+            editor.addEventListener('click', function() {
+                this.focus();
+            });
+        });
+    </script>
+</body>
+</html>
